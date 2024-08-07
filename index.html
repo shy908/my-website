@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #FFA1CF;
+        }
+
+        .container {
+            text-align: center;
+            background: #FF74B1;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .typing-area {
+            width: 100%;
+            height: 300px;
+            font-size: 20px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            transition: border 0.3s;
+            overflow-y: auto;
+            background-color: #fff;
+            white-space: pre-wrap; /* Ensure text wraps correctly */
+            word-wrap: break-word;
+        }
+
+        .typing-area:focus {
+            border: 2px solid #FF74B1;
+            outline: none;
+        }
+
+        .misspelled {
+            text-decoration: underline;
+            text-decoration-color: red;
+            text-decoration-style: wavy;
+        }
+
+        .controls {
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #FFA1CF;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #fff;
+        }
+
+        h1 {
+            color: #fff;
+        }
+
+        #timer {
+            display: inline-block;
+            min-width: 50px;
+        }
+    </style>
+    <!-- Include spellchecker library -->
+    <script src="https://cdn.jsdelivr.net/npm/typo-js@1.1.0/typo.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Typing Practice</h1>
+        <div id="typingArea" class="typing-area" contenteditable="true"></div>
+        <div class="controls">
+            <button onclick="startTypingTest()">Start</button>
+            <span id="timer" aria-live="polite">60</span> seconds left
+        </div>
+        <div id="results" aria-live="polite"></div>
+    </div>
+
+    <script>
+        let timer;
+        let timeLeft = 60;
+        let dictionary;
+
+        fetch('https://cdn.jsdelivr.net/npm/typo-js@1.1.0/dictionaries/en_US/en_US.aff')
+            .then(response => response.text())
+            .then(affData => {
+                return fetch('https://cdn.jsdelivr.net/npm/typo-js@1.1.0/dictionaries/en_US/en_US.dic')
+                    .then(response => response.text())
+                    .then(dicData => {
+                        dictionary = new Typo('en_US', affData, dicData);
+                    });
+            });
+
+        function startTypingTest() {
+            document.getElementById('typingArea').innerHTML = "";
+            document.getElementById('results').innerHTML = "";
+            document.getElementById('typingArea').focus();
+            timeLeft = 60;
+            document.getElementById('timer').innerText = timeLeft;
+            clearInterval(timer);
+            timer = setInterval(countDown, 1000);
+            document.getElementById('typingArea').addEventListener('input', handleInput);
+        }
+
+        function countDown() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                document.getElementById('timer').innerText = timeLeft;
+            } else {
+                clearInterval(timer);
+                calculateWords();
+                document.getElementById('typingArea').removeEventListener('input', handleInput);
+            }
+        }
+
+        function calculateWords() {
+            const text = document.getElementById("typingArea").innerText.trim();
+            const words = text.split(/\s+/).filter(word => word.length > 0);
+            document.getElementById("results").innerText = `You typed ${words.length} words in a minute.`;
+        }
+
+        function handleInput() {
+            const text = document.getElementById("typingArea").innerText;
+            const words = text.split(/\s+/);
+            const highlightedText = words.map(word => {
+                if (dictionary && !dictionary.check(word)) {
+                    return `<span class="misspelled">${word}</span>`;
+                } else {
+                    return word;
+                }
+            }).join(' ');
+            document.getElementById("typingArea").innerHTML = highlightedText;
+            setCaretAtEnd(document.getElementById("typingArea"));
+        }
+
+        function setCaretAtEnd(element) {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(element);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            element.focus();
+        }
+    </script>
+</body>
+</html>
